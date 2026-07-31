@@ -27,6 +27,7 @@ import json
 from fileinput import close
 import sqlite3 as sl
 
+FILE_TYPES = ["txt", "csv", "json", "excel", "sql"]
 
 class Application(Frame):
     def __init__(self, master):
@@ -34,34 +35,122 @@ class Application(Frame):
         self.master = master
         self.grid(sticky="nsew")
 
+        # настроить grid для master и self
+
         self.create_widgets()
 
     def create_widgets(self):
         settings_frame = ttk.Frame(self)
         settings_frame.grid(row=0, column=0, sticky='ew', padx=10, pady=10)
 
+        self.create_separator(settings_frame, 'h', 0, 0, 5)
+        self.create_separator(settings_frame, 'v', 0, 1, 5)
         self.gost_information(settings_frame)
-        self.create_separator(self, 1, 'h')
+        self.create_separator(settings_frame, 'h', 1, 2, 3)
+        self.get_data(settings_frame)
+        self.create_separator(settings_frame, 'h', 1, 4, 2)
+        self.save_data(settings_frame)
+        self.create_separator(settings_frame, 'h', 1, 6, 3)
+        self.create_separator(settings_frame, 'v', 2, 3, 4) #col, row, sp
+        self.output(settings_frame)
+        self.create_separator(settings_frame, 'v', 5, 1, 5)
+
+    def output(self, parent):
+        output_frame = Frame(parent)
+        output_frame.grid(row=3, column=3, sticky='nsew')
+
+        self.output_str = Label(output_frame, text='Вывод:') 
+        self.output_str.grid(row=0, column=0)
+
+        self.output_text = Entry(output_frame, width=30)
+        self.output_text.grid(row=1, column=0, rowspan=3)
+
 
     def gost_information(self, parent):
         text_fame = Frame(parent)
-        text_fame.grid(row=0, column=0, sticky='nsew')
+        text_fame.grid(row=1, column=1, sticky='nsew')
 
-        self.gost_text = Label(text_fame, text='ad')
-        self.gost_text.grid(row=0, column=0, columnspan=2)
+        self.gost_text = Label(text_fame, text='ГОСТ.........')
+        self.gost_text.grid(row=0, column=0, columnspan=4, pady=10)
 
-    def create_separator(self, parent, column_row, way):
+    def save_data(self, parent):
+        save_frame = Frame(parent)
+        save_frame.grid(row=5, column=1, sticky='nsew')
+
+        self.n_name = Label(save_frame, text='Имя нового файла:')
+        self.n_name.grid(row=0, column=0, sticky='w', pady=5)
+        
+        self.entry_n_name = Entry(save_frame, width=20)
+        self.entry_n_name.grid(row=0, column=1, sticky='w')
+
+        self.locate_save = Label(save_frame, text='Куда сохранять файл:')
+        self.locate_save.grid(row=1, column=0, sticky='w', pady=5)
+        
+        self.entry_locate_save = Entry(save_frame, width=20)
+        self.entry_locate_save.grid(row=1, column=1, sticky='w')
+
+        self.type_save = Label(save_frame, text='Тип файла')
+        self.type_save.grid(row=2, column=0, sticky='w', pady=5)
+
+        self.combo_type_of_file_save = ttk.Combobox(
+        save_frame, values=FILE_TYPES, state='readonly', width=17)
+        self.combo_type_of_file_save.grid(row=2, column=1, sticky='w')
+        self.combo_type_of_file_save.current(0)
+
+        self.save_mode_var = StringVar(save_frame, value='append')
+
+        self.save_mode_label = Label(save_frame, text='Режим записи')
+        self.save_mode_label.grid(row=3, column=0, sticky='w')
+
+        mode_frame = Frame(save_frame)
+        mode_frame.grid(row=3, column=1, sticky='w')
+
+        self.radio_append = Radiobutton(mode_frame, text='Дописать',
+                                        variable=self.save_mode_var, value='append')
+        self.radio_append.grid(row=0, column=0, sticky='w')
+
+        self.radio_append = Radiobutton(mode_frame, text='Создать новый',
+                                                variable=self.save_mode_var, value='new')
+        self.radio_append.grid(row=0, column=1, sticky='w')
+        
+        self.get_data_btn = Button(save_frame, text='Конвертировать данные', command=...) #дописать 
+        self.get_data_btn.grid(row=4, column=1, columnspan=2, sticky='w', pady=10)
+
+    def selected_type_save(self):
+        return self.combo_type_of_file_save.get()
+
+    def get_data(self, parent):
+        get_frame = Frame(parent)
+        get_frame.grid(row=3, column=1, sticky='nsew')
+
+        self.locate = Label(get_frame, text='Расположение файла:')
+        self.locate.grid(row=0, column=0, pady=5)
+
+        self.entry_locate = Entry(get_frame, width=20)
+        self.entry_locate.grid(row=0, column=1, pady=5, sticky='w')
+
+        self.type_of_file = Label(get_frame, text='Выберите тип файла') 
+        self.type_of_file.grid(row=1, column=0, sticky='w', pady=5)
+
+        self.combo_type_of_file_get = ttk.Combobox(
+        get_frame, values=FILE_TYPES, state='readonly', width=17)
+        self.combo_type_of_file_get.grid(row=1, column=1)
+        self.combo_type_of_file_get.current(0)
+
+        self.get_data_btn = Button(get_frame, text='Загрузить данные', command=...) #дописать 
+        self.get_data_btn.grid(row=2, column=1, columnspan=2, sticky='w', pady=10)
+
+    def selected_type_get(self):
+        return self.combo_type_of_file_get.get()
+
+    def create_separator(self, parent, way, column_ = 0, row_ = 0, span = 1):
         if way == 'v':
             separator = ttk.Separator(parent, orient='vertical')
-            separator.grid(row=0, column=column_row, rowspan=1, sticky="ns")
+            separator.grid(row=row_, column=column_, rowspan=span, sticky="ns")
         else:
             separator = ttk.Separator(parent, orient='horizontal')
-            separator.grid(row=column_row, column=0, sticky="ew")
+            separator.grid(row=row_, column=column_, columnspan=span, sticky="ew")
             parent.grid_columnconfigure(0, weight=1)
-
-    def start_name(self, parent):
-        text_fame = Frame(parent)
-        text_fame.grid(row=2, column=0, sticky='nsew')
 
 
 #region txt
@@ -238,7 +327,7 @@ def from_sql_to_info(name):
 
 filename = 'info'
 # info = [{'name':'ab'}]
-info = from_txt_to_info(filename)
+# info = from_txt_to_info(filename)
 # from_info_to_txt(filename, info)
 # from_info_to_csv(filename, info)
 # info = from_csv_to_info(filename)
@@ -250,8 +339,8 @@ info = from_txt_to_info(filename)
 # info = from_sql_to_info(filename)
 # print(info)
 
-# root = Tk()
-# root.geometry("1170x600")
-# root.title('Трансформатор')
-# app = Application(root)
-# root.mainloop()
+root = Tk()
+root.geometry("1170x600")
+root.title('Трансформатор')
+app = Application(root)
+root.mainloop()
