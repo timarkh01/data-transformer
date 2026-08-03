@@ -27,7 +27,7 @@ import json
 from fileinput import close
 import sqlite3 as sl
 
-FILE_TYPES = ["txt", "csv", "json", "excel", "sql"]
+FILE_TYPES = ["txt", "csv", "json", "xlsx", "sql"]
 
 class Application(Frame):
     def __init__(self, master):
@@ -37,14 +37,28 @@ class Application(Frame):
 
         # настроить grid для master и self
 
+        self.locate_file_get = ''
+        self.type_of_file_get = ''
+        self.info_get = []
+        
+        self.new_name_file = ''
+        self.locate_file_save = ''
+        self.type_of_file_save = ''
+        self.type_mode_save = ''
+
+        self.output_text = ''
+
         self.create_widgets()
 
     def create_widgets(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+
         settings_frame = ttk.Frame(self)
         settings_frame.grid(row=0, column=0, sticky='ew', padx=10, pady=10)
 
         self.create_separator(settings_frame, 'h', 0, 0, 5)
-        self.create_separator(settings_frame, 'v', 0, 1, 5)
+        self.create_separator(settings_frame, 'v', 0, 0, 5)
         self.gost_information(settings_frame)
         self.create_separator(settings_frame, 'h', 1, 2, 3)
         self.get_data(settings_frame)
@@ -62,16 +76,16 @@ class Application(Frame):
         self.output_str = Label(output_frame, text='Вывод:') 
         self.output_str.grid(row=0, column=0)
 
-        self.output_text = Entry(output_frame, width=30)
-        self.output_text.grid(row=1, column=0, rowspan=3)
-
+        self.output_window = Label(output_frame, text=self.output_text, width=30)
+        self.output_window.grid(row=1, column=0, rowspan=3)
 
     def gost_information(self, parent):
         text_fame = Frame(parent)
-        text_fame.grid(row=1, column=1, sticky='nsew')
+        text_fame.grid(row=1, column=1, columnspan=5, sticky='nsew')
 
-        self.gost_text = Label(text_fame, text='ГОСТ.........')
-        self.gost_text.grid(row=0, column=0, columnspan=4, pady=10)
+        self.gost_text = Label(text_fame, text='путь к файлу с ковычками, txt ...,' \
+        ' .... При нажатии туда сюда .... При ошибке будет ...')
+        self.gost_text.grid(row=0, column=0, pady=10)
 
     def save_data(self, parent):
         save_frame = Frame(parent)
@@ -113,11 +127,25 @@ class Application(Frame):
                                                 variable=self.save_mode_var, value='new')
         self.radio_append.grid(row=0, column=1, sticky='w')
         
-        self.get_data_btn = Button(save_frame, text='Конвертировать данные', command=...) #дописать 
+        self.get_data_btn = Button(save_frame, text='Конвертировать данные', command=self.command_save_data_btn) #дописать 
         self.get_data_btn.grid(row=4, column=1, columnspan=2, sticky='w', pady=10)
 
-    def selected_type_save(self):
-        return self.combo_type_of_file_save.get()
+    def command_save_data_btn(self):
+        self.new_name_file = self.entry_n_name.get()
+        self.locate_file_save = self.entry_locate_save.get()[1:-1]
+        self.type_of_file_save = self.combo_type_of_file_save.get()
+        self.type_mode_save = self.save_mode_var.get()
+
+        if os.path.exists(self.locate_file_save):
+            fullname = self.locate_file_save + '\\' + self.new_name_file
+            if self.type_mode_save == 'new' and os.path.exists(fullname):
+                os.remove(self.locate_file_save + self.new_name_file)
+            from_info_to_smth(fullname, self.info_get, self.type_of_file_save)
+            self.output_text = 'Данные конвертированы'
+        else:
+            self.output_text = errors('get')
+
+        self.create_widgets()
 
     def get_data(self, parent):
         get_frame = Frame(parent)
@@ -137,11 +165,23 @@ class Application(Frame):
         self.combo_type_of_file_get.grid(row=1, column=1)
         self.combo_type_of_file_get.current(0)
 
-        self.get_data_btn = Button(get_frame, text='Загрузить данные', command=...) #дописать 
+        self.get_data_btn = Button(get_frame, text='Загрузить данные', 
+                                   command=self.command_get_data_btn) #дописать 
         self.get_data_btn.grid(row=2, column=1, columnspan=2, sticky='w', pady=10)
 
-    def selected_type_get(self):
-        return self.combo_type_of_file_get.get()
+    def command_get_data_btn(self):
+        self.locate_file_get = self.entry_locate.get()[1:-1]
+        self.type_of_file_get = self.combo_type_of_file_get.get()
+
+        if not check_exist_file(self.locate_file_get, self.type_of_file_get):
+            self.output_text = errors('save')
+            self.info_get = []
+        else:
+            name_for_func = self.locate_file_get.split('.')[0]
+            self.info_get = from_smth_to_info(name_for_func, self.type_of_file_get)
+            self.output_text = 'Данные загружены'
+
+        self.create_widgets()
 
     def create_separator(self, parent, way, column_ = 0, row_ = 0, span = 1):
         if way == 'v':
@@ -152,6 +192,49 @@ class Application(Frame):
             separator.grid(row=row_, column=column_, columnspan=span, sticky="ew")
             parent.grid_columnconfigure(0, weight=1)
 
+
+def errors(name_error):
+    error = ''
+    match name_error:
+        case 'save':
+            error = 'save'
+        case 'get':
+            error = 'get'
+    return error
+
+def check_exist_file(filename, type_of_file_user):
+    type_of_file_prog = filename.split('.')[-1]
+    if type_of_file_prog == type_of_file_user:
+        return True
+    return False
+
+def from_info_to_smth(filename, info, type_of_file):
+    match type_of_file:
+        case 'txt':
+            from_info_to_txt(filename, info)
+        case 'csv':
+            from_info_to_csv(filename, info)
+        case 'json':
+            from_info_to_json(filename, info)
+        case 'xlsx':
+            from_info_to_xlsx(filename, info)
+        case 'sql':
+            from_info_to_sql(filename, info)
+
+def from_smth_to_info(filename, type_of_file):
+    cur_info = []
+    match type_of_file:
+        case 'txt':
+            cur_info = from_txt_to_info(filename)
+        case 'csv':
+            cur_info = from_csv_to_info(filename)
+        case 'json':
+            cur_info = from_json_to_info(filename) 
+        case 'xlsx':
+            cur_info = from_xlsx_to_info(filename)
+        case 'sql':
+            cur_info = from_sql_to_info(filename)
+    return cur_info
 
 #region txt
 
@@ -243,15 +326,15 @@ def from_json_to_info(name):
 
 #region excel
 
-def from_info_to_excel(name, new_info):
+def from_info_to_xlsx(name, new_info):
     fin_name = name + '.xlsx'                    #fin_name - финальное название
     if os.path.exists(fin_name):
-        old_info = from_excel_to_info(name)
+        old_info = from_xlsx_to_info(name)
         new_info = new_info + old_info
     df = pd.DataFrame(new_info)
     df.to_excel(fin_name, index=False)
 
-def from_excel_to_info(name):
+def from_xlsx_to_info(name):
     info = []
     name = name + '.xlsx'
     df = pd.read_excel(name)
@@ -340,7 +423,7 @@ filename = 'info'
 # print(info)
 
 root = Tk()
-root.geometry("1170x600")
-root.title('Трансформатор')
+root.geometry("560x350")
+root.title('Трансформер')
 app = Application(root)
-root.mainloop()
+root.mainloop() 

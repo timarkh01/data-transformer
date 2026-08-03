@@ -3,4 +3,10 @@ name: Timofey
 address: abc str.
 phone_number: +7123
 date_of_birth: 12.12.2012
+}{
+  name: Timofey
+  address: abc str.
+  phone_number: +7123
+  date_of_birth: 12.12.2012
 }
+
